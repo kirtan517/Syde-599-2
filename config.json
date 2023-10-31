@@ -1,0 +1,41 @@
+{
+  "Convolution":
+  [
+    {
+      "in_channels" : 1,
+      "out_channels": 32,
+      "kernel_size" : [3,3]
+    },
+    {
+      "in_channels" : 32,
+      "out_channels": 64,
+      "kernel_size" : [3,3]
+    },
+    {
+      "in_channels" : 64,
+      "out_channels": 128,
+      "kernel_size" : [5,5]
+    },
+    {
+      "in_channels" : 128,
+      "out_channels": 128,
+      "kernel_size" : [5,5]
+    },
+    {
+      "in_channels" : 128,
+      "out_channels": 128,
+      "kernel_size" : [5,5]
+    }
+  ],
+  "Linears":
+  [
+    {
+      "in_features" : 18432,
+      "out_features" : 128
+    },
+    {
+      "in_features" : 128,
+      "out_features" : 10
+    }
+  ]
+}
