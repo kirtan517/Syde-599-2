@@ -4,27 +4,24 @@ import json
 
 
 class CustomModel(nn.Module):
-    def __init__(self, file_path):
+    def __init__(self):
         super().__init__()
-        self.file_path = file_path
-        self.read_config_file()
-        self.convolutions = []
-        self.linears = []
         self.flatten = nn.Flatten()
-        self.read_data("Convolution",torch.nn.Conv2d,self.convolutions)
-        self.read_data("Linears",torch.nn.Linear,self.linears)
-        self.convolutions = nn.Sequential(*self.convolutions)
-        self.linears = nn.Sequential(*self.linears)
-
-    def read_config_file(self):
-        with open(self.file_path) as f:
-            data = json.load(f)
-        print(data)
-        self.data = data
-
-    def read_data(self,type,function,store):
-        for i in self.data[type]:
-            store.append(function(**i))
+        self.convolutions = nn.Sequential(
+            nn.Conv2d(1, 32, 3, 1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, 1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Dropout(0.25)
+        )
+        self.linears = nn.Sequential(
+            nn.Linear(9216, 128),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(128, 10),
+            nn.LogSoftmax(dim=1)
+        )
 
     def forward(self,x):
         x = self.convolutions(x)
@@ -33,7 +30,7 @@ class CustomModel(nn.Module):
         return x
 
 if __name__ == "__main__":
-    model = CustomModel("config.json")
+    model = CustomModel()
     input = torch.rand(12,1,28,28) # Input dims should be N * Channels * height * width
     output = model(input)
     print(output.shape)

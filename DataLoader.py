@@ -5,23 +5,25 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 
 #Setup transforms
-#TODO: create two transforms one for train and another for test
-custom_transform = transforms.Compose([
+train_transform = transforms.Compose([
     transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,))
 ])
 
-# TODO: set the transform function in collate function property in trainLoader
-
+test_transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,))
+])
 
 # Downloading the dataset
 train_dataset = torchvision.datasets.MNIST(root = "Data/",train = True,
-                                        download=True,transform=custom_transform)
+                                        download=True,transform=train_transform)
 
 test_dataset = torchvision.datasets.MNIST(root = "Data/",train = False,
-                                          download=True,transform=custom_transform)
+                                          download=True,transform=test_transform)
 
-#TODO: implement train and test loader
-train_loader = DataLoader(train_dataset,batch_size=1024,shuffle=True,)
+
+train_loader = DataLoader(train_dataset,batch_size=1024,shuffle=True)
 test_loader = DataLoader(test_dataset)
 
 
@@ -43,8 +45,11 @@ def plotTensorImages(images,labels):
     plt.show()
 
 def ComputeMeanAndStd(train_dataset):
-    mean = 0
-    std = 0
+    mean = torch.stack([image for image, _ in train_dataset]).mean()
+    std = torch.stack([image for image, _ in train_dataset]).std()
+
+    return mean, std
+
 
 
 
@@ -67,11 +72,6 @@ if __name__ == "__main__":
     # plotTenDigits(train_dataset)
     # print(next(iter(train_loader))[1])
     # k = 0
-    # for X,y in train_loader:
-    #     k+=1
-    #     if(k > 10):
-    #         break
-    #     print(y)
 
 
     pass

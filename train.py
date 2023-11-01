@@ -5,20 +5,20 @@ from models import CustomModel
 from DataLoader import train_loader,test_loader
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 # TODO: Effect of augmentation
 # TODO: Effect of regularizaiton drop out, early stopping, l2 norm
 # TODO: Different Architectures
 
-EPOCHS = 5
+EPOCHS = 3
 
 
 def getModel():
     """
     :return: (model,loss function, optimizer)
     """
-    model = CustomModel("config.json")
-    print(model)
+    model = CustomModel()
     loss_function = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(),lr=1e-3)
     return model,loss_function,optimizer
@@ -49,23 +49,32 @@ def train(train_loader,test_loader,model,loss_function,optimizer):
     """
     train_losses, train_accuracies = [], []
     test_losses, test_accuracies = [], []
-    for epoch in range(EPOCHS):
-        train_loss_epoch,train_accuracy_epoch = [],[]
-        test_loss_epoch, test_accuracy_epoch = [],[]
-        for X,y in train_loader:
-            loss,accuray = train_batch(X,y,model,loss_function,optimizer)
-            train_loss_epoch.append(loss)
-            train_accuracy_epoch.append(accuray)
+    with tqdm(total=EPOCHS, desc='Training') as epoch_bar:
+        for epoch in range(EPOCHS):
+            train_loss_epoch,train_accuracy_epoch = [],[]
+            test_loss_epoch, test_accuracy_epoch = [],[]
+            for X,y in train_loader:
+                loss,accuray = train_batch(X,y,model,loss_function,optimizer)
+                train_loss_epoch.append(loss)
+                train_accuracy_epoch.append(accuray)
 
 
-        for X,y in test_loader:
-            loss,accuray = Inference(X,y,model,loss_function)
-            test_loss_epoch.append(loss)
-            test_accuracy_epoch.append(accuray)
-        train_losses.append(np.mean(np.array(train_loss_epoch)))
-        train_accuracies.append(np.mean(np.array(train_accuracy_epoch)))
-        test_losses.append(np.mean(np.array(test_loss_epoch)))
-        test_accuracies.append(np.mean(np.array(test_accuracy_epoch)))
+            for X,y in test_loader:
+                loss,accuray = Inference(X,y,model,loss_function)
+                test_loss_epoch.append(loss)
+                test_accuracy_epoch.append(accuray)
+
+            train_losses.append(np.sum(np.array(train_loss_epoch)) / len(train_loader.dataset)  )
+            train_accuracies.append(np.sum(np.array(train_accuracy_epoch)) / len(train_loader.dataset) )
+            test_losses.append(np.sum(np.array(test_loss_epoch))/ len(test_loader.dataset) )
+            test_accuracies.append(np.sum(np.array(test_accuracy_epoch)) / len(test_loader.dataset) )
+
+            epoch_bar.set_postfix(
+                loss=f'{np.sum(np.array(train_loss_epoch)) / len(train_loader.dataset):.4f}',
+                accuracy=f'{100 * np.sum(np.array(train_accuracy_epoch)) / len(train_loader.dataset):.2f}%'
+            )
+            epoch_bar.set_description(f'Epoch {epoch + 1}')
+            epoch_bar.update(1)
     plot(train_losses,train_accuracies,test_losses,test_accuracies)
 
 
