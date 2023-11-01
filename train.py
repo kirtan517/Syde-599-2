@@ -13,14 +13,13 @@ import optuna
 # TODO: Different Architectures
 
 EPOCHS = 3
-# if torch.backends.mps.is_available():
-#     DEVICE = torch.device("mps")
-#     x = torch.ones(1, device=DEVICE)
-#     print (x)
-# else:
-#     DEVICE = torch.device("cpu")
-#     print ("MPS device not found.")
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if  torch.backends.mps.is_available():
+    DEVICE = torch.device("mps")
+    x = torch.ones(1, device=DEVICE)
+else:
+    DEVICE = torch.device("cpu")
+
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.device = DEVICE
 
@@ -40,8 +39,6 @@ def train_batch(X,y,model,loss_function,optimizer):
     :return: (loss , accuracy)
     """
     model.train()
-    X.to(DEVICE)
-    y.to(DEVICE)
     predicitons = model(X)
     batch_loss = loss_function(predicitons,y)
     batch_loss.backward()
@@ -54,7 +51,7 @@ def train_batch(X,y,model,loss_function,optimizer):
 def Inference(X,y,model,loss_function):
     predictions = model(X)
     loss = loss_function(predictions,y)
-    accuracy = torch.sum(torch.argmax(predictions) == y)
+    accuracy = torch.sum(torch.argmax(predictions,dim = 1) == y)
     return loss.item() * X.shape[0],accuracy.item()
 
 def train(train_loader,test_loader,model,loss_function,optimizer):
@@ -69,12 +66,16 @@ def train(train_loader,test_loader,model,loss_function,optimizer):
             train_loss_epoch,train_accuracy_epoch = [],[]
             test_loss_epoch, test_accuracy_epoch = [],[]
             for X,y in train_loader:
+                X = X.to(DEVICE)
+                y = y.to(DEVICE)
                 loss,accuray = train_batch(X,y,model,loss_function,optimizer)
                 train_loss_epoch.append(loss)
                 train_accuracy_epoch.append(accuray)
 
 
             for X,y in test_loader:
+                X = X.to(DEVICE)
+                y = y.to(DEVICE)
                 loss,accuray = Inference(X,y,model,loss_function)
                 test_loss_epoch.append(loss)
                 test_accuracy_epoch.append(accuray)
