@@ -7,12 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import optuna
+from optuna.trial import TrialState
 
 # TODO: Effect of augmentation
 # TODO: Effect of regularizaiton drop out, early stopping, l2 norm
 # TODO: Different Architectures
 
-EPOCHS = 3
+EPOCHS = 30
 if  torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
     x = torch.ones(1, device=DEVICE)
@@ -54,7 +55,7 @@ def Inference(X,y,model,loss_function):
     accuracy = torch.sum(torch.argmax(predictions,dim = 1) == y)
     return loss.item() * X.shape[0],accuracy.item()
 
-def train(train_loader,test_loader,model,loss_function,optimizer):
+def train(train_loader,test_loader,model,loss_function,optimizer,trail):
     """
     :return: (plot nothing to return )
     """
@@ -91,6 +92,13 @@ def train(train_loader,test_loader,model,loss_function,optimizer):
             )
             epoch_bar.set_description(f'Epoch {epoch + 1}')
             epoch_bar.update(1)
+
+            trail.report(np.sum(np.array(test_loss_epoch))/ len(test_loader.dataset), epoch)
+
+            # Handle pruning based on the intermediate value.
+            if trail.should_prune():
+                raise optuna.exceptions.TrialPruned()
+
     plot(train_losses,train_accuracies,test_losses,test_accuracies)
 
     # get the final loss
@@ -138,7 +146,7 @@ def saveModel():
 
 def main(params,trail):
     model,loss_function,optimizer = getModel(params,trail)
-    return train(train_loader,test_loader,model,loss_function,optimizer)
+    return train(train_loader,test_loader,model,loss_function,optimizer,trail)
 
 
 def objective(trail):
@@ -154,11 +162,23 @@ def objective(trail):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective,n_trials=3)
+    study.optimize(objective,n_trials=10)
+
+    pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
+    complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
+
+    print("Study statistics: ")
+    print("  Number of finished trials: ", len(study.trials))
+    print("  Number of pruned trials: ", len(pruned_trials))
+    print("  Number of complete trials: ", len(complete_trials))
+
+    print("Best trial:")
     trial = study.best_trial
-    print("Best Score: ", trial.value)
-    print("Best Params: ")
+
+    print("  Value: ", trial.value)
+
+    print("  Params: ")
     for key, value in trial.params.items():
-        print("  {}: {}".format(key, value))
+        print("    {}: {}".format(key, value))
     # print(DEVICE)
     # main()
