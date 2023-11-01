@@ -17,10 +17,11 @@ custom_transform = transforms.Compose([
 train_dataset = torchvision.datasets.MNIST(root = "Data/",train = True,
                                         download=True,transform=custom_transform)
 
-test_dataset = torchvision.datasets.MNIST(root = "Data/",train = False,download=True)
+test_dataset = torchvision.datasets.MNIST(root = "Data/",train = False,
+                                          download=True,transform=custom_transform)
 
 #TODO: implement train and test loader
-train_loader = DataLoader(train_dataset,batch_size=32,shuffle=True,)
+train_loader = DataLoader(train_dataset,batch_size=1024,shuffle=True,)
 test_loader = DataLoader(test_dataset)
 
 
