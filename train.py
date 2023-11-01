@@ -6,21 +6,33 @@ from DataLoader import train_loader,test_loader
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import optuna
 
 # TODO: Effect of augmentation
 # TODO: Effect of regularizaiton drop out, early stopping, l2 norm
 # TODO: Different Architectures
 
 EPOCHS = 3
+# if torch.backends.mps.is_available():
+#     DEVICE = torch.device("mps")
+#     x = torch.ones(1, device=DEVICE)
+#     print (x)
+# else:
+#     DEVICE = torch.device("cpu")
+#     print ("MPS device not found.")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+torch.device = DEVICE
 
 
-def getModel():
+def getModel(params,trail):
     """
     :return: (model,loss function, optimizer)
     """
     model = CustomModel()
+    model.to(DEVICE)
     loss_function = torch.nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(),lr=1e-3)
+    optimizer = optim.Adam(model.parameters(),lr=params["Learning Rate"])
     return model,loss_function,optimizer
 
 def train_batch(X,y,model,loss_function,optimizer):
@@ -28,6 +40,8 @@ def train_batch(X,y,model,loss_function,optimizer):
     :return: (loss , accuracy)
     """
     model.train()
+    X.to(DEVICE)
+    y.to(DEVICE)
     predicitons = model(X)
     batch_loss = loss_function(predicitons,y)
     batch_loss.backward()
@@ -47,6 +61,7 @@ def train(train_loader,test_loader,model,loss_function,optimizer):
     """
     :return: (plot nothing to return )
     """
+
     train_losses, train_accuracies = [], []
     test_losses, test_accuracies = [], []
     with tqdm(total=EPOCHS, desc='Training') as epoch_bar:
@@ -70,12 +85,17 @@ def train(train_loader,test_loader,model,loss_function,optimizer):
             test_accuracies.append(np.sum(np.array(test_accuracy_epoch)) / len(test_loader.dataset) )
 
             epoch_bar.set_postfix(
-                loss=f'{np.sum(np.array(train_loss_epoch)) / len(train_loader.dataset):.4f}',
-                accuracy=f'{100 * np.sum(np.array(train_accuracy_epoch)) / len(train_loader.dataset):.2f}%'
+                loss=f'{np.sum(np.array(train_loss_epoch)) / len(train_loader.dataset):.4f}, Test : {np.sum(np.array(test_loss_epoch))/ len(test_loader.dataset)}',
+                accuracy=f'{100 * np.sum(np.array(train_accuracy_epoch)) / len(train_loader.dataset):.2f}% , Test : {100 * np.sum(np.array(test_accuracy_epoch)) / len(test_loader.dataset) :.2f}%'
             )
             epoch_bar.set_description(f'Epoch {epoch + 1}')
             epoch_bar.update(1)
     plot(train_losses,train_accuracies,test_losses,test_accuracies)
+
+    # get the final loss
+    loss,accuray = Inference(X,y,model,loss_function)
+    return loss
+
 
 
 def accuray(y_true,y_predictions):
@@ -115,11 +135,29 @@ def plot(train_losses,train_accuracies,test_losses,test_accuraies):
 def saveModel():
     pass
 
-def main():
-    model,loss_function,optimizer = getModel()
-    train(train_loader,test_loader,model,loss_function,optimizer)
+def main(params,trail):
+    model,loss_function,optimizer = getModel(params,trail)
+    return train(train_loader,test_loader,model,loss_function,optimizer)
+
+
+def objective(trail):
+    params = {
+        # "Number of Convolution layers" : trail.suggest_int("numberOfConvolutionLayers",2,5),
+        # "Number of Linear layers" : trail.suggest_int("numberOfConvolutionLayers",1,3),
+        "Learning Rate" : trail.suggest_loguniform("learningRate",1e-8,1e-2),
+        # "Optimizer" : trail.suggest_categorical("optimizer", ["Adam", "SGD"]),
+    }
+    loss = main(params,trail)
+    return loss
 
 
 if __name__ == "__main__":
-    main()
-    pass
+    study = optuna.create_study(direction="minimize")
+    study.optimize(objective,n_trials=3)
+    trial = study.best_trial
+    print("Best Score: ", trial.value)
+    print("Best Params: ")
+    for key, value in trial.params.items():
+        print("  {}: {}".format(key, value))
+    # print(DEVICE)
+    # main()

@@ -23,8 +23,8 @@ test_dataset = torchvision.datasets.MNIST(root = "Data/",train = False,
                                           download=True,transform=test_transform)
 
 
-train_loader = DataLoader(train_dataset,batch_size=1024,shuffle=True)
-test_loader = DataLoader(test_dataset)
+train_loader = DataLoader(train_dataset,batch_size=len(train_dataset),shuffle=True)
+test_loader = DataLoader(test_dataset,batch_size=len(test_dataset),shuffle=True)
 
 
 def plotTensorImages(images,labels):
