@@ -18,13 +18,13 @@ class CustomModel(nn.Module):
         convolutional_layers = []
 
         for i in range(params["Number of Convolutional layers"]):
-            out_channels = trail.suggest_int("n_units_c{}".format(i), 20, 32)
+            out_channels = trail.suggest_int("n_units_c{}".format(i), 16, 512)
             kernel_size = trail.suggest_int("n_kernel_size{}".format(i), 3, 5)
             convolutional_layers.append(nn.Conv2d(in_channels, out_channels,kernel_size))
             convolutional_layers.append(nn.ReLU())
-            p = trail.suggest_float("dropout_l{}".format(i), 0.2, 0.5)
+            p = trail.suggest_float("dropout_c{}".format(i), 0.2, 0.5)
             convolutional_layers.append(nn.Dropout(p))
-
+            convolutional_layers.append(nn.BatchNorm2d(out_channels))
             in_channels = out_channels
 
         self.convolutions = nn.Sequential(*convolutional_layers)
@@ -35,7 +35,7 @@ class CustomModel(nn.Module):
 
         linear_layers = []
         for i in range(params["Number of Linear layers"]):
-            out_features = trail.suggest_int("n_units_l{}".format(i), 4, 128)
+            out_features = trail.suggest_int("n_units_l{}".format(i), 4, 256)
             linear_layers.append(nn.Linear(in_features, out_features))
             linear_layers.append(nn.ReLU())
             p = trail.suggest_float("dropout_l{}".format(i), 0.2, 0.5)

@@ -9,11 +9,8 @@ from tqdm import tqdm
 import optuna
 from optuna.trial import TrialState
 
-# say kernal size,
-# second conv channels,
-# learning rate, beta 2
 
-EPOCHS = 4
+EPOCHS = 20
 if  torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
 elif torch.cuda.is_available():
@@ -98,7 +95,7 @@ def train(train_loader,test_loader,model,loss_function,optimizer,trail):
             epoch_bar.set_description(f'Epoch {epoch + 1}')
             epoch_bar.update(1)
 
-            trail.report(np.sum(np.array(test_loss_epoch))/ len(test_loader.dataset), epoch)
+            trail.report(np.sum(np.array(test_accuracy_epoch)) / len(test_loader.dataset), epoch)
 
             # Handle pruning based on the intermediate value.
             if trail.should_prune():
@@ -156,9 +153,9 @@ def main(params,trail):
 
 def objective(trail):
     params = {
-        "Number of Linear layers": trail.suggest_int("numberOfLinearLayers", 1, 3),
-        "Number of Convolutional layers": trail.suggest_int("numberOfConvolutionLayers", 1, 3),
-        "Learning Rate": trail.suggest_loguniform("learningRate", 1e-8, 1e-2),
+        "Number of Linear layers": trail.suggest_int("numberOfLinearLayers", 1, 4),
+        "Number of Convolutional layers": trail.suggest_int("numberOfConvolutionLayers", 1, 4),
+        "Learning Rate": trail.suggest_loguniform("learningRate", 1e-8, 1e-4),
         "Optimizer": trail.suggest_categorical("optimizer", ["Adam", "SGD"]),
     }
     loss = main(params,trail)
@@ -166,8 +163,8 @@ def objective(trail):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="maximize")
-    study.optimize(objective,n_trials=10)
+    study = optuna.create_study(direction="maximize",storage="sqlite:///mnsit.db",study_name="Final_run")
+    study.optimize(objective,n_trials=100)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
