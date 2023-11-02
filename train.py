@@ -9,18 +9,18 @@ from tqdm import tqdm
 import optuna
 from optuna.trial import TrialState
 
-# TODO: Effect of augmentation
-# TODO: Effect of regularizaiton drop out, early stopping, l2 norm
-# TODO: Different Architectures
+# say kernal size,
+# second conv channels,
+# learning rate, beta 2
 
-EPOCHS = 30
+EPOCHS = 4
 if  torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
-    x = torch.ones(1, device=DEVICE)
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
 else:
     DEVICE = torch.device("cpu")
 
-# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.device = DEVICE
 
@@ -29,10 +29,15 @@ def getModel(params,trail):
     """
     :return: (model,loss function, optimizer)
     """
-    model = CustomModel()
+    model = CustomModel(params,trail)
     model.to(DEVICE)
     loss_function = torch.nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(),lr=params["Learning Rate"])
+    if params["Optimizer"] == "Adam":
+        beta_2 = trail.suggest_loguniform("beta_2", 1e-1, 9e-1)
+        beta_1 = trail.suggest_loguniform("beta_1", 1e-2, 9e-2)
+        optimizer = optim.Adam(model.parameters(),lr=params["Learning Rate"],betas=(beta_1,beta_2))
+    else:
+        optimizer = optim.SGD(model.parameters(),lr = params["Learning Rate"])
     return model,loss_function,optimizer
 
 def train_batch(X,y,model,loss_function,optimizer):
@@ -103,7 +108,7 @@ def train(train_loader,test_loader,model,loss_function,optimizer,trail):
 
     # get the final loss
     loss,accuray = Inference(X,y,model,loss_function)
-    return loss
+    return accuray/len(test_loader.dataset)
 
 
 
@@ -151,17 +156,17 @@ def main(params,trail):
 
 def objective(trail):
     params = {
-        # "Number of Convolution layers" : trail.suggest_int("numberOfConvolutionLayers",2,5),
-        # "Number of Linear layers" : trail.suggest_int("numberOfConvolutionLayers",1,3),
-        "Learning Rate" : trail.suggest_loguniform("learningRate",1e-8,1e-2),
-        # "Optimizer" : trail.suggest_categorical("optimizer", ["Adam", "SGD"]),
+        "Number of Linear layers": trail.suggest_int("numberOfLinearLayers", 1, 3),
+        "Number of Convolutional layers": trail.suggest_int("numberOfConvolutionLayers", 1, 3),
+        "Learning Rate": trail.suggest_loguniform("learningRate", 1e-8, 1e-2),
+        "Optimizer": trail.suggest_categorical("optimizer", ["Adam", "SGD"]),
     }
     loss = main(params,trail)
     return loss
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(direction="maximize")
     study.optimize(objective,n_trials=10)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
