@@ -144,10 +144,7 @@ def plot(train_losses,train_accuracies,test_losses,test_accuraies):
 
     plt.tight_layout()
     plt.show()
-    pass
 
-def saveModel():
-    pass
 
 def main(params,trail):
     model,loss_function,optimizer = getModel(params,trail)
@@ -161,8 +158,8 @@ def objective(trail):
         "Learning Rate": trail.suggest_loguniform("learningRate", 1e-8, 1e-2),
         "Optimizer": trail.suggest_categorical("optimizer", ["Adam", "SGD"]),
     }
-    loss = main(params,trail)
-    return loss
+    accuracy = main(params,trail)
+    return accuracy
 
 
 if __name__ == "__main__":

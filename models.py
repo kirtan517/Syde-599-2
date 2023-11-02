@@ -14,20 +14,19 @@ class CustomModel(nn.Module):
             self.withOptuna(params,trail)
 
     def withOptuna(self,params,trail):
-        in_channels = 1
-        convolutional_layers = []
+        channels_size_1 = trail.suggest_int("channelSize_1",20,32)
+        channels_size_2 = trail.suggest_int("channelSize_2",32,64)
 
-        for i in range(params["Number of Convolutional layers"]):
-            out_channels = trail.suggest_int("n_units_c{}".format(i), 20, 32)
-            kernel_size = trail.suggest_int("n_kernel_size{}".format(i), 3, 5)
-            convolutional_layers.append(nn.Conv2d(in_channels, out_channels,kernel_size))
-            convolutional_layers.append(nn.ReLU())
-            p = trail.suggest_float("dropout_l{}".format(i), 0.2, 0.5)
-            convolutional_layers.append(nn.Dropout(p))
+        kernel_size = trail.suggest_int("kernelSize",3,5)
 
-            in_channels = out_channels
-
-        self.convolutions = nn.Sequential(*convolutional_layers)
+        self.convolutions = nn.Sequential(
+            nn.Conv2d(1, channels_size_1, kernel_size, 1),
+            nn.ReLU(),
+            nn.Conv2d(channels_size_1, channels_size_2, kernel_size, 1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Dropout(0.25)
+        )
 
         input = torch.rand(12, 1, 28, 28)
         output = self.convolutions.forward(input)
@@ -40,12 +39,14 @@ class CustomModel(nn.Module):
             linear_layers.append(nn.ReLU())
             p = trail.suggest_float("dropout_l{}".format(i), 0.2, 0.5)
             linear_layers.append(nn.Dropout(p))
+
             in_features = out_features
 
         linear_layers.append(nn.Linear(in_features, 10))
         linear_layers.append(nn.LogSoftmax(dim=1))
 
         self.linears = nn.Sequential(*linear_layers)
+
 
 
     def withoutOptuna(self):
