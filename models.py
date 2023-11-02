@@ -14,16 +14,18 @@ class CustomModel(nn.Module):
             self.withOptuna(params,trail)
 
     def withOptuna(self,params,trail):
-        channels_size_1 = trail.suggest_int("channelSize_1",20,32)
-        channels_size_2 = trail.suggest_int("channelSize_2",32,64)
+        channels_size_1 = trail.suggest_int("channelSize_1",20,64)
+        channels_size_2 = trail.suggest_int("channelSize_2",32,128)
 
-        kernel_size = trail.suggest_int("kernelSize",3,5)
+        kernel_size = trail.suggest_int("kernelSize",3,7)
 
         self.convolutions = nn.Sequential(
             nn.Conv2d(1, channels_size_1, kernel_size, 1),
             nn.ReLU(),
+            nn.BatchNorm2d(channels_size_1),
             nn.Conv2d(channels_size_1, channels_size_2, kernel_size, 1),
             nn.ReLU(),
+            nn.BatchNorm2d(channels_size_2),
             nn.MaxPool2d(2),
             nn.Dropout(0.25)
         )
