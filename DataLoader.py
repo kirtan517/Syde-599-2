@@ -66,12 +66,24 @@ def plotTenDigits(dataset):
             break
     plotTensorImages(images,labels)
 
+def plotImage(image):
+    plt.imshow(image, cmap='gray')
+    plt.axis('off')  # Turn off the axes
+
+    # Define the path to save the image
+    save_path = 'mnist_image.png'
+
+    # Save the image
+    plt.savefig(save_path, bbox_inches='tight', pad_inches=0, format='png')
+    plt.show()  # Optional to display the image in your IDE
+
 
 if __name__ == "__main__":
-    # images,labels = zip(*[train_dataset[i] for i in range(10)])
+    images,labels = zip(*[train_dataset[i] for i in range(10)])
     # plotTenDigits(train_dataset)
     # print(next(iter(train_loader))[1])
     # k = 0
+    plotImage(images[0].permute(1, 2, 0))
 
 
     pass

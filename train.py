@@ -163,7 +163,8 @@ def objective(trail):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="maximize",storage="sqlite:///mnsit.db",study_name = "Final_Run")
+    study = optuna.create_study(direction="maximize",storage="sqlite:///mnsit.db",study_name = "Final_Run",
+                                load_if_exists=True)
     study.optimize(objective,n_trials=200)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
