@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from models import CustomModel
 from DataLoader import train_loader, test_loader
@@ -32,15 +31,19 @@ def getModel(params, trail):
     model = CustomModel(params, trail)
     model.to(DEVICE)
     loss_function = torch.nn.CrossEntropyLoss()
-    if params["Optimizer"] == "Adam":
+    if params is not None and params["Optimizer"] == "Adam":
         beta_2 = trail.suggest_loguniform("beta_2", 1e-1, 9e-1)
         beta_1 = trail.suggest_loguniform("beta_1", 1e-2, 9e-2)
         optimizer = optim.Adam(model.parameters(), lr=params["Learning Rate"], betas=(beta_1, beta_2))
-    else:
+    elif params is not None and params["Optimizer"] == "SGD":
         momentun = trail.suggest_loguniform("beta_2", 1e-7, 1e-2)
         weight_decay = trail.suggest_loguniform("beta_2", 1e-7, 1e-2)
         optimizer = optim.SGD(model.parameters(), lr=params["Learning Rate"], momentum=momentun,
                               weight_decay=weight_decay)
+    else:
+        optimizer = optim.Adam(model.parameters(), lr=1e-2)
+
+
     return model, loss_function, optimizer
 
 
@@ -129,11 +132,12 @@ def train(train_loader, test_loader, model, loss_function, optimizer, trail):
             epoch_bar.set_description(f'Epoch {epoch + 1}')
             epoch_bar.update(1)
 
-            trail.report(np.sum(np.array(train_accuracy_epoch)) / len(train_loader.dataset), epoch)
+            if trail is not None:
+                trail.report(np.sum(np.array(train_accuracy_epoch)) / len(train_loader.dataset), epoch)
 
-            # Handle pruning based on the intermediate value.
-            if trail.should_prune():
-                raise optuna.exceptions.TrialPruned()
+                # Handle pruning based on the intermediate value.
+                if trail.should_prune():
+                    raise optuna.exceptions.TrialPruned()
 
     plot(train_losses, train_accuracies, test_losses, test_accuracies)
 
@@ -188,7 +192,7 @@ def plot(train_losses, train_accuracies, test_losses, test_accuraies):
     plt.show()
 
 
-def main(params, trail):
+def main(params=None, trail=None):
     """
     Main function for training and evaluating a deep learning model with specified hyperparameters.
 
@@ -220,25 +224,27 @@ def objective(trail):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="maximize", storage="sqlite:///mnsit.db", study_name="Final_Run_1",
-                                load_if_exists=True)
-    study.optimize(objective, n_trials=100)
+    Optuna = False
+    if Optuna == True:
+        study = optuna.create_study(direction="maximize", storage="sqlite:///mnsit.db", study_name="Final_Run_1",
+                                    load_if_exists=True)
+        study.optimize(objective, n_trials=100)
 
-    pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
-    complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
+        pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
+        complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
 
-    print("Study statistics: ")
-    print("  Number of finished trials: ", len(study.trials))
-    print("  Number of pruned trials: ", len(pruned_trials))
-    print("  Number of complete trials: ", len(complete_trials))
+        print("Study statistics: ")
+        print("  Number of finished trials: ", len(study.trials))
+        print("  Number of pruned trials: ", len(pruned_trials))
+        print("  Number of complete trials: ", len(complete_trials))
 
-    print("Best trial:")
-    trial = study.best_trial
+        print("Best trial:")
+        trial = study.best_trial
 
-    print("  Value: ", trial.value)
+        print("  Value: ", trial.value)
 
-    print("  Params: ")
-    for key, value in trial.params.items():
-        print("    {}: {}".format(key, value))
-    # print(DEVICE)
-    # main()
+        print("  Params: ")
+        for key, value in trial.params.items():
+            print("    {}: {}".format(key, value))
+    else:
+        main()
