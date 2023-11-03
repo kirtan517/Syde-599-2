@@ -10,7 +10,7 @@ import optuna
 from optuna.trial import TrialState
 
 
-EPOCHS = 30
+EPOCHS = 5
 
 if  torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
