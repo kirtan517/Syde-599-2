@@ -10,7 +10,7 @@ import optuna
 from optuna.trial import TrialState
 
 
-EPOCHS = 5
+EPOCHS = 30
 
 if  torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
@@ -162,7 +162,7 @@ def objective(trail):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize",storage="sqlite:///mnsit.db")
-    study.optimize(objective,n_trials=10)
+    study.optimize(objective,n_trials=100)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])

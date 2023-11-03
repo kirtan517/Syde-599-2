@@ -36,7 +36,7 @@ class CustomModel(nn.Module):
 
         linear_layers = []
         for i in range(params["Number of Linear layers"]):
-            out_features = trail.suggest_int("n_units_l{}".format(i), 4, 128)
+            out_features = trail.suggest_int("n_units_l{}".format(i), 32, 256)
             linear_layers.append(nn.Linear(in_features, out_features))
             linear_layers.append(nn.ReLU())
             p = trail.suggest_float("dropout_l{}".format(i), 0.2, 0.5)
