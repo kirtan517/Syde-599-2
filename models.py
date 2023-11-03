@@ -14,8 +14,8 @@ class CustomModel(nn.Module):
             self.withOptuna(params,trail)
 
     def withOptuna(self,params,trail):
-        channels_size_1 = trail.suggest_int("channelSize_1",20,64)
-        channels_size_2 = trail.suggest_int("channelSize_2",32,128)
+        channels_size_1 = trail.suggest_int("channelSize_1",20,128)
+        channels_size_2 = trail.suggest_int("channelSize_2",20,256)
 
         kernel_size = trail.suggest_int("kernelSize",3,7)
 
