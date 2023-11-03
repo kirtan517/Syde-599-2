@@ -10,7 +10,7 @@ import optuna
 from optuna.trial import TrialState
 
 
-EPOCHS = 15
+EPOCHS = 10
 
 if  torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
@@ -35,8 +35,8 @@ def getModel(params,trail):
         beta_1 = trail.suggest_loguniform("beta_1", 1e-2, 9e-2)
         optimizer = optim.Adam(model.parameters(),lr=params["Learning Rate"],betas=(beta_1,beta_2))
     else:
-        momentun = trail.suggest_loguniform("beta_2", 0, 1e-2)
-        weight_decay = trail.suggest_loguniform("beta_2", 0, 1e-2)
+        momentun = trail.suggest_loguniform("beta_2", 1e-7, 1e-2)
+        weight_decay = trail.suggest_loguniform("beta_2", 1e-7, 1e-2)
         optimizer = optim.SGD(model.parameters(),lr = params["Learning Rate"],momentum = momentun,weight_decay = weight_decay)
     return model,loss_function,optimizer
 
@@ -163,9 +163,9 @@ def objective(trail):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="maximize",storage="sqlite:///mnsit.db",study_name = "Final_Run",
+    study = optuna.create_study(direction="maximize",storage="sqlite:///mnsit.db",study_name = "Final_Run_1",
                                 load_if_exists=True)
-    study.optimize(objective,n_trials=200)
+    study.optimize(objective,n_trials=100)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
